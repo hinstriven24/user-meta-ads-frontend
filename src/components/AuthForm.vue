@@ -26,12 +26,13 @@
               class="auth-input"
             />
           </el-form-item>
-          <el-form-item>
+          <!-- 将单选按钮组放在一个独立的容器中，添加样式 -->
+          <div class="login-type-container">
             <el-radio-group v-model="loginType" class="login-type">
               <el-radio label="email">邮箱</el-radio>
               <el-radio label="phone">手机号码</el-radio>
             </el-radio-group>
-          </el-form-item>
+          </div>
           <el-form-item v-if="loginType === 'email'">
             <el-input
               v-model="form.email"
@@ -46,11 +47,19 @@
               class="auth-input"
             />
           </el-form-item>
-          <el-form-item>
+          <el-form-item v-if="loginType === 'email'">
             <el-input
               v-model="form.password"
               type="password"
               placeholder="密码"
+              class="auth-input"
+            />
+          </el-form-item>
+          <el-form-item v-if="loginType === 'phone'">
+            <el-input
+              v-model="form.password"
+              type="password"
+              placeholder="短信验证码"
               class="auth-input"
             />
           </el-form-item>
@@ -343,6 +352,17 @@ export default {
 
 .login-type {
   margin-bottom: 15px;
+}
+
+/* 新添加的样式，用于美化单选按钮组 */
+.login-type-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 15px;
+}
+
+.login-type .el-radio {
+  margin: 0 10px;
 }
 
 /* 动画效果 */

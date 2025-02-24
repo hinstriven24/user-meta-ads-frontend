@@ -1,0 +1,11 @@
+/* 全局样式 */
+body {
+  margin: 0;
+  font-family: Helvetica, Arial, sans-serif; /* Facebook 字体 */
+  background-color: #f0f2f5; /* Facebook 背景灰色 */
+}
+
+#app {
+  display: flex;
+  min-height: 100vh;
+}

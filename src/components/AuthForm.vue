@@ -19,13 +19,7 @@
       <div class="auth-box">
         <h2 class="auth-title">{{ title }}</h2>
         <el-form :model="form" label-width="0">
-          <el-form-item v-if="showUsername">
-            <el-input
-              v-model="form.username"
-              placeholder="用户名"
-              class="auth-input"
-            />
-          </el-form-item>
+          
           <!-- 将单选按钮组放在一个独立的容器中，添加样式 -->
           <div class="login-type-container">
             <el-radio-group v-model="loginType" class="login-type">
@@ -33,11 +27,19 @@
               <el-radio label="phone">手机号码</el-radio>
             </el-radio-group>
           </div>
+          <el-form-item v-if="showUsername">
+            <el-input
+              v-model="form.username"
+              placeholder="用户名"
+              class="auth-input"
+            />
+          </el-form-item>
           <el-form-item v-if="loginType === 'email'">
             <el-input
               v-model="form.email"
               placeholder="邮箱地址"
               class="auth-input"
+              @blur="validateEmail"
             />
           </el-form-item>
           <el-form-item v-if="loginType === 'phone'">
@@ -45,6 +47,7 @@
               v-model="form.phone"
               placeholder="手机号码"
               class="auth-input"
+              @blur="validatePhone"
             />
           </el-form-item>
           <el-form-item v-if="loginType === 'email'">
@@ -55,10 +58,17 @@
               class="auth-input"
             />
           </el-form-item>
+          <el-form-item v-if="loginType === 'email'">
+            <el-input
+              v-model="form.confirmPassword"
+              type="password"
+              placeholder="确认密码"
+              class="auth-input"
+            />
+          </el-form-item>
           <el-form-item v-if="loginType === 'phone'">
             <el-input
-              v-model="form.password"
-              type="password"
+              v-model="form.code"
               placeholder="短信验证码"
               class="auth-input"
             />
@@ -150,6 +160,7 @@ export default {
         email: '',
         phone: '',
         password: '',
+        code: '', // 新增短信验证码字段
       },
     };
   },
@@ -165,6 +176,30 @@ export default {
     },
     onSocialLogin(provider) {
       this.$emit('social-login', provider);
+    },
+    validateEmail() {
+      // 这里添加邮箱校验逻辑
+      const email = this.form.email;
+      const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+      if (!emailRegex.test(email)) {
+        // 校验失败，给出提示
+        this.$message.error('请输入有效的邮箱地址');
+      } else {
+        // 校验成功，可以做一些其他操作
+        console.log('邮箱格式正确');
+      }
+    },
+    validatePhone() {
+      // 这里添加手机号码校验逻辑
+      const phone = this.form.phone;
+      const phoneRegex = /^1[3-9]\d{9}$/; // 简单的中国手机号码正则表达式
+      if (!phoneRegex.test(phone)) {
+        // 校验失败，给出提示
+        this.$message.error('请输入有效的手机号码');
+      } else {
+        // 校验成功，可以做一些其他操作
+        console.log('手机号码格式正确');
+      }
     },
   },
 };

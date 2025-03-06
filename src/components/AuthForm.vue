@@ -2,7 +2,7 @@
   <div class="auth-container">
     <div class="left-panel">
       <div class="logo">
-        <i class="fab fa-meta logo-icon"></i> <!-- 使用 Font Awesome 的 Meta 图标 -->
+        <i class="fab fa-meta logo-icon"></i>
       </div>
       <div class="description">
         <h2>欢迎使用后台管理系统</h2>
@@ -18,67 +18,83 @@
     <div class="right-panel">
       <div class="auth-box">
         <h2 class="auth-title">{{ title }}</h2>
-        <el-form :model="form" label-width="0">
-          
-          <!-- 将单选按钮组放在一个独立的容器中，添加样式 -->
-          <div class="login-type-container">
-            <el-radio-group v-model="loginType" class="login-type">
-              <el-radio label="email">邮箱</el-radio>
-              <el-radio label="phone">手机号码</el-radio>
-            </el-radio-group>
-          </div>
-          <el-form-item v-if="showUsername">
-            <el-input
-              v-model="form.username"
-              placeholder="用户名"
-              class="auth-input"
-            />
-          </el-form-item>
-          <el-form-item v-if="loginType === 'email'">
-            <el-input
-              v-model="form.email"
-              placeholder="邮箱地址"
-              class="auth-input"
-              @blur="validateEmail"
-            />
-          </el-form-item>
-          <el-form-item v-if="loginType === 'phone'">
-            <el-input
-              v-model="form.phone"
-              placeholder="手机号码"
-              class="auth-input"
-              @blur="validatePhone"
-            />
-          </el-form-item>
-          <el-form-item v-if="loginType === 'email'">
-            <el-input
-              v-model="form.password"
-              type="password"
-              placeholder="密码"
-              class="auth-input"
-            />
-          </el-form-item>
-          <el-form-item v-if="loginType === 'email'">
-            <el-input
-              v-model="form.confirmPassword"
-              type="password"
-              placeholder="确认密码"
-              class="auth-input"
-            />
-          </el-form-item>
-          <el-form-item v-if="loginType === 'phone'">
-            <el-input
-              v-model="form.code"
-              placeholder="短信验证码"
-              class="auth-input"
-            />
-          </el-form-item>
-          <el-form-item>
-            <el-button type="primary" class="auth-button" @click="onSubmit">
-              {{ submitText }}
-            </el-button>
-          </el-form-item>
-        </el-form>
+        <!-- 使用 el-tabs 实现标签页切换 -->
+        <el-tabs v-model="activeTab" class="auth-tabs">
+          <el-tab-pane label="邮箱" name="email">
+            <el-form :model="form" label-width="0">
+              <el-form-item v-if="showUsername">
+                <el-input
+                  v-model="form.username"
+                  placeholder="用户名"
+                  class="auth-input"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-input
+                  v-model="form.email"
+                  placeholder="邮箱地址"
+                  class="auth-input"
+                  @blur="validateEmail"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-input
+                  v-model="form.password"
+                  type="password"
+                  placeholder="密码"
+                  class="auth-input"
+                />
+              </el-form-item>
+              <el-form-item v-if="activeTab === 'email' && isRegister">
+                <el-input
+                  v-model="form.confirmPassword"
+                  type="password"
+                  placeholder="确认密码"
+                  class="auth-input"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" class="auth-button" @click="onSubmit">
+                  {{ submitText }}
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+          <el-tab-pane label="手机号码" name="phone">
+            <el-form :model="form" label-width="0">
+              <el-form-item>
+                <el-input
+                  v-model="form.phone"
+                  placeholder="手机号码"
+                  class="auth-input"
+                  @blur="validatePhone"
+                />
+              </el-form-item>
+              <el-form-item>
+                <el-input
+                  v-model="form.code"
+                  placeholder="短信验证码"
+                  class="auth-input"
+                >
+                <template #append>
+                    <el-button
+                      type="primary"
+                      :disabled="isCodeSending"
+                      @click="sendCode"
+                    >
+                      {{ codeButtonText }}
+                    </el-button>
+                  </template>
+                </el-input>
+              </el-form-item>
+              <el-form-item>
+                <el-button type="primary" class="auth-button" @click="onSubmit">
+                  {{ submitText }}
+                </el-button>
+              </el-form-item>
+            </el-form>
+          </el-tab-pane>
+        </el-tabs>
         <div class="auth-options">
           <el-button type="text" class="auth-option" @click="onSwitchForm">
             {{ switchText }}
@@ -118,12 +134,14 @@
 </template>
 
 <script>
-import { ElTooltip } from 'element-plus';
+import { ElTooltip, ElTabs, ElTabPane } from 'element-plus';
 
 export default {
   name: 'AuthForm',
   components: {
     ElTooltip,
+    ElTabs,
+    ElTabPane,
   },
   props: {
     title: {
@@ -150,23 +168,31 @@ export default {
       type: Boolean,
       default: true,
     },
+    isRegister: {
+      type: Boolean,
+      default: false,
+    },
   },
   emits: ['submit', 'switch-form', 'forgot-password', 'social-login'],
   data() {
     return {
-      loginType: 'email', // 默认使用邮箱登录
+      activeTab: 'phone', // 默认激活的标签页
       form: {
         username: '',
         email: '',
         phone: '',
         password: '',
-        code: '', // 新增短信验证码字段
+        confirmPassword: '',
+        code: '',
       },
+      isCodeSending: false,
+      countdown: 0,
+      codeButtonText: '发送验证码',
     };
   },
   methods: {
     onSubmit() {
-      this.$emit('submit', { ...this.form, loginType: this.loginType });
+      this.$emit('submit', { ...this.form, loginType: this.activeTab });
     },
     onSwitchForm() {
       this.$emit('switch-form');
@@ -178,29 +204,49 @@ export default {
       this.$emit('social-login', provider);
     },
     validateEmail() {
-      // 这里添加邮箱校验逻辑
       const email = this.form.email;
       const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
       if (!emailRegex.test(email)) {
-        // 校验失败，给出提示
         this.$message.error('请输入有效的邮箱地址');
       } else {
-        // 校验成功，可以做一些其他操作
         console.log('邮箱格式正确');
       }
     },
     validatePhone() {
-      // 这里添加手机号码校验逻辑
       const phone = this.form.phone;
-      const phoneRegex = /^1[3-9]\d{9}$/; // 简单的中国手机号码正则表达式
+      const phoneRegex = /^1[3-9]\d{9}$/;
       if (!phoneRegex.test(phone)) {
-        // 校验失败，给出提示
         this.$message.error('请输入有效的手机号码');
-      } else {
-        // 校验成功，可以做一些其他操作
-        console.log('手机号码格式正确');
+        return false;
       }
+      return true;
     },
+    sendCode() {
+      if (this.isCodeSending) return;
+
+      if (!this.form.phone || !this.validatePhone()) {
+        this.$message.error('请输入有效的手机号码');
+        return;
+      }
+
+      this.isCodeSending = true;
+      this.countdown = 60;
+
+      setTimeout(() => {
+        this.$message.success('验证码已发送');
+      }, 1000);
+
+      const timer = setInterval(() => {
+        this.countdown--;
+        this.codeButtonText = `${this.countdown}秒后重发`;
+
+        if (this.countdown <= 0) {
+          clearInterval(timer);
+          this.isCodeSending = false;
+          this.codeButtonText = '发送验证码';
+        }
+      }, 1000);
+    }
   },
 };
 </script>
@@ -209,7 +255,7 @@ export default {
 .auth-container {
   display: flex;
   height: 100vh;
-  background-color: #f0f2f5; /* Facebook 背景灰色 */
+  background-color: #f0f2f5;
 }
 
 .left-panel {
@@ -220,10 +266,10 @@ export default {
   align-items: center;
   background: linear-gradient(
     135deg,
-    rgba(240, 242, 245, 0.95), /* 最浅的蓝色，接近白色 */
-    rgba(240, 242, 245, 0.95) /* 最浅的蓝色，接近白色 */
+    rgba(240, 242, 245, 0.95),
+    rgba(240, 242, 245, 0.95)
   );
-  color: #2c3e50; /* 深灰色文字 */
+  color: #2c3e50;
   padding: 40px;
   position: relative;
   overflow: hidden;
@@ -232,31 +278,31 @@ export default {
 .logo {
   z-index: 2;
   margin-bottom: 20px;
-  animation: fadeIn 1s ease-in-out; /* Logo 动画 */
+  animation: fadeIn 1s ease-in-out;
 }
 
 .logo-icon {
-  font-size: 80px; /* 调整图标大小 */
-  color: #1877f2; /* Facebook 蓝色 */
+  font-size: 80px;
+  color: #1877f2;
 }
 
 .description {
   z-index: 2;
   max-width: 500px;
   text-align: center;
-  animation: slideIn 1s ease-in-out; /* 描述文字动画 */
+  animation: slideIn 1s ease-in-out;
 }
 
 .description h2 {
   font-size: 32px;
   margin-bottom: 20px;
-  color: #2c3e50; /* 深灰色文字 */
+  color: #2c3e50;
 }
 
 .description p {
   font-size: 18px;
   margin-bottom: 20px;
-  color: #2c3e50; /* 深灰色文字 */
+  color: #2c3e50;
 }
 
 .description ul {
@@ -267,7 +313,7 @@ export default {
 .description ul li {
   font-size: 16px;
   margin-bottom: 10px;
-  color: #2c3e50; /* 深灰色文字 */
+  color: #2c3e50;
 }
 
 .right-panel {
@@ -287,7 +333,29 @@ export default {
 .auth-title {
   margin-bottom: 20px;
   font-size: 24px;
-  color: #1877f2; /* Facebook 蓝色 */
+  color: #1877f2;
+}
+
+/* 调整 el-tabs 样式 */
+.auth-tabs {
+  margin-bottom: 20px;
+}
+
+.auth-tabs :deep(.el-tabs__nav) {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.auth-tabs :deep(.el-tabs__item) {
+  flex: 1; /* 让两个标签平分宽度 */
+  text-align: center;
+  padding: 0 20px; /* 增加内边距 */
+}
+
+.auth-tabs :deep(.el-tabs__active-bar) {
+  width: 50% !important; /* 激活条宽度为 50% */
+  margin-left: 0; /* 对齐激活条 */
 }
 
 .auth-input {
@@ -303,7 +371,7 @@ export default {
 .auth-button {
   width: 100%;
   height: 40px;
-  background-color: #1877f2; /* Facebook 蓝色 */
+  background-color: #1877f2;
   border: none;
   border-radius: 6px;
   font-size: 16px;
@@ -311,7 +379,7 @@ export default {
 }
 
 .auth-button:hover {
-  background-color: #1659b5; /* 深蓝色 */
+  background-color: #1659b5;
 }
 
 .auth-options {
@@ -326,7 +394,7 @@ export default {
 .auth-option {
   padding: 0;
   font-size: 14px;
-  color: #1877f2; /* Facebook 蓝色 */
+  color: #1877f2;
 }
 
 .social-login {
@@ -336,7 +404,7 @@ export default {
 .social-icons {
   display: flex;
   justify-content: center;
-  gap: 15px; /* 图标间距 */
+  gap: 15px;
 }
 
 .social-icon {
@@ -346,58 +414,52 @@ export default {
 }
 
 .social-icon.facebook {
-  color: #1877f2; /* Facebook 蓝色 */
+  color: #1877f2;
 }
 
 .social-icon.facebook:hover {
-  color: #1659b5; /* 深蓝色 */
+  color: #1659b5;
 }
 
 .social-icon.instagram {
-  color: #e4405f; /* Instagram 粉色 */
+  color: #e4405f;
 }
 
 .social-icon.instagram:hover {
-  color: #c13584; /* 深粉色 */
+  color: #c13584;
 }
 
 .social-icon.threads {
-  color: #000000; /* Threads 黑色 */
+  color: #000000;
 }
 
 .social-icon.threads:hover {
-  color: #333333; /* 深灰色 */
+  color: #333333;
 }
 
 .social-icon.messenger {
-  color: #0084ff; /* Messenger 蓝色 */
+  color: #0084ff;
 }
 
 .social-icon.messenger:hover {
-  color: #0066cc; /* 深蓝色 */
+  color: #0066cc;
 }
 
 .social-icon.whatsapp {
-  color: #25d366; /* WhatsApp 绿色 */
+  color: #25d366;
 }
 
 .social-icon.whatsapp:hover {
-  color: #128c7e; /* 深绿色 */
+  color: #128c7e;
 }
 
-.login-type {
-  margin-bottom: 15px;
-}
-
-/* 新添加的样式，用于美化单选按钮组 */
-.login-type-container {
-  display: flex;
-  justify-content: center;
-  margin-bottom: 15px;
-}
-
-.login-type .el-radio {
-  margin: 0 10px;
+.auth-input :deep(.el-button) {
+  background-color: var(--el-color-primary); /* 使用 Element Plus 的主题色 */
+  color: white; /* 文字颜色 */
+  border: none; /* 移除边框 */
+  width: 100px;
+  height: 40px;
+  border-radius: 0 6px 6px 0;
 }
 
 /* 动画效果 */

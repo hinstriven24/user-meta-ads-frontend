@@ -1,4 +1,4 @@
-# admin-meta-ads
+# user-meta-ads-frontend
 
 ## Project setup
 ```

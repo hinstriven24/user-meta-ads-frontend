@@ -3,6 +3,7 @@
     title="注册"
     submitText="注册"
     switchText="已有账号？登录"
+    :isRegister="true"
     :showUsername="true"
     :showForgotPassword="false"
     :showSocialLogin="false"
